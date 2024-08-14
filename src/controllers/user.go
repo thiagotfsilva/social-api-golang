@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"strings"
 )
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
@@ -44,8 +45,24 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusCreated, user)
 }
 
-func BuscarUsuarios(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte("Buscando Usuarios"))
+func FindUsers(w http.ResponseWriter, r *http.Request) {
+	nameOrNick := strings.ToLower(r.URL.Query().Get("user"))
+
+	db, err := infra.Connect()
+	if err != nil {
+		response.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	userRepository := repositories.NewUserRepository(db)
+	users, err := userRepository.Fetch(nameOrNick)
+	if err != nil {
+		response.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	response.JSON(w, http.StatusOK, users)
 }
 
 func BuscarUsuario(w http.ResponseWriter, r *http.Request) {

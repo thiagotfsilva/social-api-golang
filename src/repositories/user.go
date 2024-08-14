@@ -3,6 +3,7 @@ package repositories
 import (
 	"api-devbook/src/models"
 	"database/sql"
+	"fmt"
 )
 
 type userRepository struct {
@@ -35,4 +36,38 @@ func (u userRepository) Create(user models.User) (uint64, error) {
 
 	return uint64(lastInsertID), nil
 
+}
+
+func (u userRepository) Fetch(nameOrNick string) ([]models.User, error) {
+	nameOrNick = fmt.Sprintf("%%%s%%", nameOrNick) //%nameOrNick%
+	line, err := u.db.Query(
+		"select id, nome, nick, email, criadoEm from usuarios where nome LIKE ? or nick LIKE ?",
+		nameOrNick, nameOrNick,
+	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	defer line.Close()
+
+	var users []models.User
+
+	for line.Next() {
+		var user models.User
+
+		if err = line.Scan(
+			&user.ID,
+			&user.Name,
+			&user.Nick,
+			&user.Email,
+			&user.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		users = append(users, user)
+	}
+
+	return users, nil
 }
