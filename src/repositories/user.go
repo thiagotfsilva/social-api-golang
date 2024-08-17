@@ -71,3 +71,30 @@ func (u userRepository) Fetch(nameOrNick string) ([]models.User, error) {
 
 	return users, nil
 }
+
+func (u userRepository) Find(userId uint64) (models.User, error) {
+	line, err := u.db.Query(
+		"select id, nome, nick, email, criadoEm from usuarios where id = ?",
+		userId,
+	)
+	if err != nil {
+		return models.User{}, err
+	}
+	defer line.Close()
+
+	var user models.User
+
+	if line.Next() {
+		if err = line.Scan(
+			&user.ID,
+			&user.Name,
+			&user.Nick,
+			&user.Email,
+			&user.CreatedAt,
+		); err != nil {
+			return models.User{}, err
+		}
+	}
+
+	return user, nil
+}
