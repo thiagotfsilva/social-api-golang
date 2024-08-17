@@ -15,7 +15,7 @@ type User struct {
 	CreatedAt time.Time `json:"createdAt,omitempty"`
 }
 
-func (u *User) validate() error {
+func (u *User) validate(step string) error {
 	if u.Name == "" {
 		return errors.New("name is required")
 	}
@@ -25,7 +25,7 @@ func (u *User) validate() error {
 	if u.Email == "" {
 		return errors.New("email is required")
 	}
-	if u.Password == "" {
+	if step == "register" && u.Password == "" {
 		return errors.New("password is required")
 	}
 
@@ -39,8 +39,8 @@ func (u *User) format() {
 }
 
 // Prepare chama os metodos para validar e formatar o usuario
-func (u *User) Prepare() error {
-	if err := u.validate(); err != nil {
+func (u *User) Prepare(step string) error {
+	if err := u.validate(step); err != nil {
 		return err
 	}
 

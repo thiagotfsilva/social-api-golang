@@ -98,3 +98,20 @@ func (u userRepository) Find(userId uint64) (models.User, error) {
 
 	return user, nil
 }
+
+func (u userRepository) Update(userId uint64, user models.User) error {
+	statament, err := u.db.Prepare(
+		"update usuarios set nome = ?, nick = ?, email = ? where id = ?",
+	)
+	if err != nil {
+		return err
+	}
+	defer statament.Close()
+
+	_, err = statament.Exec(user.Name, user.Nick, user.Email, userId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
