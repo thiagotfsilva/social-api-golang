@@ -12,6 +12,7 @@ import (
 var (
 	URIDatabase = ""
 	Port        = 0
+	Secret      []byte
 )
 
 func LoadEnv() {
@@ -31,4 +32,6 @@ func LoadEnv() {
 		os.Getenv("DB_SENHA"),
 		os.Getenv("DB_NOME"),
 	)
+
+	Secret = []byte(os.Getenv("SECRET"))
 }
