@@ -4,8 +4,10 @@ import (
 	"api-devbook/src/infra"
 	"api-devbook/src/models"
 	"api-devbook/src/repositories"
+	"api-devbook/src/utils/auth"
 	"api-devbook/src/utils/response"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -96,9 +98,20 @@ func FindUser(w http.ResponseWriter, r *http.Request) {
 func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 
-	userID, err := strconv.ParseUint(params["userId"], 10, 64)
+	userId, err := strconv.ParseUint(params["userId"], 10, 64)
 	if err != nil {
 		response.JSON(w, http.StatusBadRequest, err)
+		return
+	}
+
+	userIdToken, err := auth.ExtractUserId(r)
+	if err != nil {
+		response.JSON(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if userId != userIdToken {
+		response.JSON(w, http.StatusForbidden, errors.New("invalid request"))
 		return
 	}
 
@@ -127,7 +140,7 @@ func UpdateUser(w http.ResponseWriter, r *http.Request) {
 	defer db.Close()
 
 	userRepository := repositories.NewUserRepository(db)
-	err = userRepository.Update(userID, user)
+	err = userRepository.Update(userId, user)
 	if err != nil {
 		response.Erro(w, http.StatusInternalServerError, err)
 		return
@@ -141,6 +154,17 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 	userId, err := strconv.ParseUint(params["userId"], 10, 64)
 	if err != nil {
 		response.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	userIdToken, err := auth.ExtractUserId(r)
+	if err != nil {
+		response.JSON(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if userId != userIdToken {
+		response.JSON(w, http.StatusForbidden, errors.New("invalid request"))
 		return
 	}
 
