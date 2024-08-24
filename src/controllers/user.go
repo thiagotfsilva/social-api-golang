@@ -184,3 +184,38 @@ func DeleteUser(w http.ResponseWriter, r *http.Request) {
 
 	response.JSON(w, http.StatusNoContent, nil)
 }
+
+func FollowUser(w http.ResponseWriter, r *http.Request) {
+	followerId, err := auth.ExtractUserId(r)
+	if err != nil {
+		response.Erro(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	params := mux.Vars(r)
+	userId, err := strconv.ParseUint(params["userId"], 10, 64)
+	if err != nil {
+		response.Erro(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	if followerId == userId {
+		response.Erro(w, http.StatusForbidden, errors.New("Denied"))
+		return
+	}
+
+	db, err := infra.Connect()
+	if err != nil {
+		response.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	userRepository := repositories.NewUserRepository(db)
+	if err = userRepository.FollowUser(userId, followerId); err != nil {
+		response.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	response.JSON(w, http.StatusNoContent, nil)
+}

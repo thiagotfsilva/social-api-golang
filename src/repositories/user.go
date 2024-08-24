@@ -16,7 +16,7 @@ func NewUserRepository(db *sql.DB) *userRepository {
 
 func (u userRepository) Create(user models.User) (uint64, error) {
 	statement, err := u.db.Prepare(
-		"insert into usuarios (nome, nick, email, senha) values(?, ?, ?, ?)",
+		"insert into users (name, nick, email, password) values(?, ?, ?, ?)",
 	)
 	if err != nil {
 		return 0, err
@@ -41,7 +41,7 @@ func (u userRepository) Create(user models.User) (uint64, error) {
 func (u userRepository) Fetch(nameOrNick string) ([]models.User, error) {
 	nameOrNick = fmt.Sprintf("%%%s%%", nameOrNick) //%nameOrNick%
 	line, err := u.db.Query(
-		"select id, nome, nick, email, criadoEm from usuarios where nome LIKE ? or nick LIKE ?",
+		"select id, name, nick, email, createdAt from users where name LIKE ? or nick LIKE ?",
 		nameOrNick, nameOrNick,
 	)
 
@@ -74,7 +74,7 @@ func (u userRepository) Fetch(nameOrNick string) ([]models.User, error) {
 
 func (u userRepository) Find(userId uint64) (models.User, error) {
 	line, err := u.db.Query(
-		"select id, nome, nick, email, criadoEm from usuarios where id = ?",
+		"select id, name, nick, email, createdAt from users where id = ?",
 		userId,
 	)
 	if err != nil {
@@ -101,7 +101,7 @@ func (u userRepository) Find(userId uint64) (models.User, error) {
 
 func (u userRepository) Update(userId uint64, user models.User) error {
 	statament, err := u.db.Prepare(
-		"update usuarios set nome = ?, nick = ?, email = ? where id = ?",
+		"update users set name = ?, nick = ?, email = ? where id = ?",
 	)
 	if err != nil {
 		return err
@@ -117,7 +117,7 @@ func (u userRepository) Update(userId uint64, user models.User) error {
 }
 
 func (u userRepository) Delete(userId uint64) error {
-	statement, err := u.db.Prepare("delete from usuarios where id = ?")
+	statement, err := u.db.Prepare("delete from users where id = ?")
 	if err != nil {
 		return err
 	}
@@ -132,7 +132,7 @@ func (u userRepository) Delete(userId uint64) error {
 }
 
 func (u userRepository) FindByEmail(email string) (models.User, error) {
-	line, err := u.db.Query("select id, senha from usuarios where email = ?", email)
+	line, err := u.db.Query("select id, password from users where email = ?", email)
 	if err != nil {
 		return models.User{}, err
 	}
@@ -147,4 +147,21 @@ func (u userRepository) FindByEmail(email string) (models.User, error) {
 	}
 
 	return user, nil
+}
+
+func (u userRepository) FollowUser(userId, followerId uint64) error {
+	statement, err := u.db.Prepare(
+		"insert ignore into followers (user_id, follower_id) values (?, ?)",
+	)
+	if err != nil {
+		return err
+	}
+	defer statement.Close()
+
+	_, err = statement.Exec(userId, followerId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
