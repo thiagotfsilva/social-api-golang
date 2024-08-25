@@ -8,10 +8,10 @@ import (
 )
 
 type Route struct {
-	URI          string
-	Method       string
-	Function     func(http.ResponseWriter, *http.Request)
-	RequiredAuth bool
+	URI            string
+	Method         string
+	Function       func(http.ResponseWriter, *http.Request)
+	Authentication bool
 }
 
 // Config coloca todas as rotas dentro do router
@@ -20,7 +20,7 @@ func Config(r *mux.Router) *mux.Router {
 	routes = append(routes, LoginRoute)
 
 	for _, route := range routes {
-		if route.RequiredAuth {
+		if route.Authentication {
 			r.HandleFunc(
 				route.URI,
 				middlewares.Logger(middlewares.HandleAuth(route.Function)),
