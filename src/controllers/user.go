@@ -5,6 +5,7 @@ import (
 	"api-devbook/src/models"
 	"api-devbook/src/repositories"
 	"api-devbook/src/utils/auth"
+	handlehash "api-devbook/src/utils/handleHash"
 	"api-devbook/src/utils/response"
 	"encoding/json"
 	"errors"
@@ -302,4 +303,69 @@ func GetFollowing(w http.ResponseWriter, r *http.Request) {
 	}
 
 	response.JSON(w, http.StatusOK, users)
+}
+
+func UpdatePassword(w http.ResponseWriter, r *http.Request) {
+	userIdToken, err := auth.ExtractUserId(r)
+	if err != nil {
+		response.Erro(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	params := mux.Vars(r)
+	userIdParams, err := strconv.ParseUint(params["userId"], 10, 64)
+	if err != nil {
+		response.Erro(w, http.StatusForbidden, err)
+		return
+	}
+
+	if userIdToken != userIdParams {
+		response.Erro(w, http.StatusForbidden, errors.New("denied"))
+		return
+	}
+
+	bodyRequest, err := io.ReadAll(r.Body)
+	if err != nil {
+		response.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	var password models.Password
+	if err = json.Unmarshal(bodyRequest, &password); err != nil {
+		response.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := infra.Connect()
+	if err != nil {
+		response.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	userRepository := repositories.NewUserRepository(db)
+	userPassword, err := userRepository.GetUserPassword(userIdParams)
+	if err != nil {
+		response.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if err = handlehash.VerifyPassword(userPassword, password.CurrentPassword); err != nil {
+		response.Erro(w, http.StatusUnauthorized, errors.New("passwords isn't match"))
+		return
+	}
+
+	hashPassword, err := handlehash.Hash(password.NewPassword)
+	if err != nil {
+		response.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	err = userRepository.UpdatePassword(userIdParams, string(hashPassword))
+	if err != nil {
+		response.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	response.JSON(w, http.StatusNoContent, nil)
 }
