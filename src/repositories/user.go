@@ -183,6 +183,7 @@ func (u userRepository) UnfollowUser(userId, followerId uint64) error {
 	return nil
 }
 
+// GetFollowers traz todos os seguidores de um usuário
 func (u userRepository) GetFollowers(userId uint64) ([]models.User, error) {
 	line, err := u.db.Query(`
     select u.id, u.name, u.nick, u.email, u.createdAt
@@ -195,6 +196,7 @@ func (u userRepository) GetFollowers(userId uint64) ([]models.User, error) {
 	defer line.Close()
 
 	var users []models.User
+
 	for line.Next() {
 		var user models.User
 
@@ -212,4 +214,37 @@ func (u userRepository) GetFollowers(userId uint64) ([]models.User, error) {
 	}
 
 	return users, nil
+}
+
+// GetFollowing traz todos os usuários que um determinado usuário está seguindo
+func (u userRepository) GetFollowing(userId uint64) ([]models.User, error) {
+	line, err := u.db.Query(`
+    select u.id, u.name, u.nick, u.email, u.createdAt
+    from users u inner join followers s on u.id = s.user_id
+    where s.follower_id = ?
+  `, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer line.Close()
+
+	var users []models.User
+
+	for line.Next() {
+		var user models.User
+
+		if err = line.Scan(
+			&user.ID,
+			&user.Name,
+			&user.Nick,
+			&user.Email,
+			&user.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+
+		users = append(users, user)
+	}
+
+	return users, err
 }
