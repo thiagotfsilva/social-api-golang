@@ -85,6 +85,7 @@ func FindUser(w http.ResponseWriter, r *http.Request) {
 		response.Erro(w, http.StatusInternalServerError, err)
 		return
 	}
+	defer db.Close()
 
 	userRepository := repositories.NewUserRepository(db)
 	user, err := userRepository.Find(userID)
