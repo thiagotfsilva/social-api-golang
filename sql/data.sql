@@ -37,3 +37,9 @@ INSERT INTO followers (user_id, follower_id) VALUES
 
 SELECT * FROM users;
 SELECT * FROM followers;
+
+INSERT INTO publications(title, content, author_id)
+VALUES
+("Publicação do usuário 1", "Essa é a publicação do usuário 1! Oba!", 1),
+("Publicação do usuário 2", "Essa é a publicação do usuário 1! Oba!", 2),
+("Publicação do usuário 13", "Essa é a publicação do usuário 1! Oba!", 3);

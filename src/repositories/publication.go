@@ -38,3 +38,73 @@ func (p PublicationRepository) Create(publication models.Publication) (uint64, e
 
 	return uint64(lastId), nil
 }
+
+func (p PublicationRepository) FindById(publicationId uint64) (models.Publication, error) {
+	line, err := p.db.Query(`
+    select p.*, u.nick from
+    publications p inner join users u
+    on u.id = p.author_id where p.id = ?`,
+		publicationId,
+	)
+	if err != nil {
+		return models.Publication{}, err
+	}
+	defer line.Close()
+
+	var publication models.Publication
+
+	if line.Next() {
+		// Scan segue a ordem da query
+		if err = line.Scan(
+			&publication.Id,
+			&publication.Title,
+			&publication.Content,
+			&publication.AuthorId,
+			&publication.Likes,
+			&publication.CreatedAt,
+			&publication.AuthorNickName,
+		); err != nil {
+			return models.Publication{}, err
+		}
+	}
+
+	return publication, nil
+}
+
+func (p PublicationRepository) Fetch(userId uint64) ([]models.Publication, error) {
+	lines, err := p.db.Query(`
+    select distinct p.*, u.nick from publications p
+    inner join users u on u.id = p.author_id
+    inner join followers f on p.author_id = f.user_id
+    where u.id = ? or f.follower_id = ?
+    order by 1 desc`,
+		userId,
+		userId,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer lines.Close()
+
+	var publications []models.Publication
+
+	for lines.Next() {
+		var publication models.Publication
+
+		if err = lines.Scan(
+			&publication.Id,
+			&publication.Title,
+			&publication.Content,
+			&publication.AuthorId,
+			&publication.Likes,
+			&publication.CreatedAt,
+			&publication.AuthorNickName,
+		); err != nil {
+			return nil, err
+		}
+
+		publications = append(publications, publication)
+	}
+
+	return publications, nil
+}
