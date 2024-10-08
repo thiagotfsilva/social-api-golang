@@ -7,6 +7,7 @@ import (
 	"api-devbook/src/utils/auth"
 	"api-devbook/src/utils/response"
 	"encoding/json"
+	"errors"
 	"io"
 	"net/http"
 	"strconv"
@@ -133,7 +134,7 @@ func UpdatePublication(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if publicatioExist.AuthorId != userId {
-		response.Erro(w, http.StatusForbidden, err)
+		response.Erro(w, http.StatusForbidden, errors.New("Forbiden"))
 		return
 	}
 
@@ -164,5 +165,42 @@ func UpdatePublication(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeletePublication(w http.ResponseWriter, r *http.Request) {
+	userId, err := auth.ExtractUserId(r)
+	if err != nil {
+		response.Erro(w, http.StatusUnauthorized, err)
+		return
+	}
 
+	params := mux.Vars(r)
+	publicationId, err := strconv.ParseUint(params["publicationId"], 10, 64)
+	if err != nil {
+		response.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := infra.Connect()
+	if err != nil {
+		response.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+	defer db.Close()
+
+	publicationRepository := repositories.NewPublicationRepository(db)
+	publicationExist, err := publicationRepository.FindById(publicationId)
+	if err != nil {
+		response.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	if publicationExist.AuthorId != userId {
+		response.Erro(w, http.StatusForbidden, errors.New("Forbiden"))
+		return
+	}
+
+	if err = publicationRepository.Delete(publicationId); err != nil {
+		response.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	response.JSON(w, http.StatusNoContent, nil)
 }

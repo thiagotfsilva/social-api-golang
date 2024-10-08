@@ -14,15 +14,15 @@ func NewPublicationRepository(db *sql.DB) *PublicationRepository {
 }
 
 func (p PublicationRepository) Create(publication models.Publication) (uint64, error) {
-	statemante, err := p.db.Prepare(
+	statement, err := p.db.Prepare(
 		"insert into publications (title, content, author_id) values (?, ?, ?)",
 	)
 	if err != nil {
 		return 0, err
 	}
-	defer statemante.Close()
+	defer statement.Close()
 
-	result, err := statemante.Exec(
+	result, err := statement.Exec(
 		publication.Title,
 		publication.Content,
 		publication.AuthorId,
@@ -110,15 +110,31 @@ func (p PublicationRepository) Fetch(userId uint64) ([]models.Publication, error
 }
 
 func (p PublicationRepository) Update(publicationId uint64, publication models.Publication) error {
-	statemant, err := p.db.Prepare(
+	statement, err := p.db.Prepare(
 		"update publications set title = ?, content = ? where id = ?",
 	)
 	if err != nil {
 		return err
 	}
-	defer statemant.Close()
+	defer statement.Close()
 
-	if _, err = statemant.Exec(publication.Title, publication.Content, publicationId); err != nil {
+	if _, err = statement.Exec(publication.Title, publication.Content, publicationId); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (p PublicationRepository) Delete(publicationId uint64) error {
+	statement, err := p.db.Prepare(
+		"delete from publications where id = ?",
+	)
+	if err != nil {
+		return err
+	}
+	defer statement.Close()
+
+	if _, err = statement.Exec(publicationId); err != nil {
 		return err
 	}
 
