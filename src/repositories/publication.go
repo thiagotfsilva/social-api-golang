@@ -108,3 +108,19 @@ func (p PublicationRepository) Fetch(userId uint64) ([]models.Publication, error
 
 	return publications, nil
 }
+
+func (p PublicationRepository) Update(publicationId uint64, publication models.Publication) error {
+	statemant, err := p.db.Prepare(
+		"update publications set title = ?, content = ? where id = ?",
+	)
+	if err != nil {
+		return err
+	}
+	defer statemant.Close()
+
+	if _, err = statemant.Exec(publication.Title, publication.Content, publicationId); err != nil {
+		return err
+	}
+
+	return nil
+}
