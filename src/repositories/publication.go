@@ -175,3 +175,17 @@ func (p PublicationRepository) FindPublicationByUser(userId uint64) ([]models.Pu
 
 	return publications, nil
 }
+
+func (p PublicationRepository) LikePublication(publicationId uint64) error {
+	statement, err := p.db.Prepare("update publications set likes = likes + 1 where id = ?")
+	if err != nil {
+		return err
+	}
+	defer statement.Close()
+
+	if _, err = statement.Exec(publicationId); err != nil {
+		return err
+	}
+
+	return nil
+}
