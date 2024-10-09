@@ -189,3 +189,24 @@ func (p PublicationRepository) LikePublication(publicationId uint64) error {
 
 	return nil
 }
+
+func (p PublicationRepository) DislikePublication(publicationId uint64) error {
+	statement, err := p.db.Prepare(`
+    update publications set likes =
+    CASE 
+      WHEN likes > 0 THEN likes - 1
+      ELSE 0 
+    END
+    where id = ?
+  `)
+	if err != nil {
+		return err
+	}
+
+	if _, err = statement.Exec(publicationId); err != nil {
+		return err
+	}
+
+	return nil
+
+}

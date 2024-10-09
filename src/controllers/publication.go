@@ -255,3 +255,27 @@ func LikePublication(w http.ResponseWriter, r *http.Request) {
 	response.JSON(w, http.StatusNoContent, nil)
 
 }
+
+func DislikePublication(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+	publicationId, err := strconv.ParseUint(params["publicationId"], 10, 64)
+	if err != nil {
+		response.Erro(w, http.StatusBadRequest, err)
+		return
+	}
+
+	db, err := infra.Connect()
+	if err != nil {
+		response.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+	defer db.Close()
+
+	publicationRepository := repositories.NewPublicationRepository(db)
+	if err = publicationRepository.DislikePublication(publicationId); err != nil {
+		response.Erro(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	response.JSON(w, http.StatusNoContent, nil)
+}
